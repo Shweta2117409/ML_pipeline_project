@@ -333,11 +333,49 @@
     }
 
     /* ── Responsive ── */
-    @media (max-width: 600px) {
-      .card { padding: 24px 20px; }
-      .form-grid { grid-template-columns: 1fr 1fr; }
-      .logo-text h1 { font-size: 1.4rem; }
-      .badge { display: none; }
+    @media (max-width: 768px) {
+      .wrapper {
+        padding-inline: 16px;
+      }
+      header {
+        align-items: flex-start;
+      }
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+      }
+      .logo-text h1 {
+        font-size: 1.4rem;
+      }
+      .card {
+        padding: 22px 18px;
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .field label {
+        font-size: 0.7rem;
+      }
+      .field-helper {
+        font-size: 0.68rem;
+      }
+      .btn-predict,
+      .btn-reset {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+      .submit-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #result-panel {
+        padding: 20px 18px;
+      }
+      .badge {
+        display: none;
+      }
     }
   </style>
 </head>
