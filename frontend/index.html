@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CardioScan — Heart Disease Prediction</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e84c6b'><path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0f1a;
+      --surface:   #111827;
+      --border:    #1e293b;
+      --accent:    #e84c6b;
+      --accent2:   #f97316;
+      --green:     #10b981;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --input-bg:  #0d1424;
+      --radius:    10px;
+      --font-body: 'DM Sans', sans-serif;
+      --font-disp: 'DM Serif Display', serif;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* ── Background grid ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Glows ── */
+    .glow-left, .glow-right {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-left  { background: rgba(232,76,107,0.07); top: -100px; left: -100px; }
+    .glow-right { background: rgba(249,115,22,0.06); bottom: -100px; right: -100px; }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 52px;
+      animation: fadeDown 0.6s ease both;
+    }
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 24px rgba(232,76,107,0.4);
+    }
+    .logo-icon svg { width: 26px; height: 26px; fill: white; }
+    .logo-text h1 {
+      font-family: var(--font-disp);
+      font-size: 1.7rem;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .logo-text span { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* ── Badge ── */
+    .badge {
+      margin-left: auto;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: rgba(16,185,129,0.1);
+      color: var(--green);
+      border: 1px solid rgba(16,185,129,0.25);
+      font-weight: 500;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 36px 40px;
+      animation: fadeUp 0.7s ease both;
+    }
+    .card-title {
+      font-family: var(--font-disp);
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+    .card-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 32px; }
+
+    /* ── Form grid ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .field label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field label .hint {
+      font-weight: 400;
+      font-size: 0.68rem;
+      color: #334155;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .field-helper {
+      font-size: 0.7rem;
+      color: #475569;
+      line-height: 1.4;
+      margin-top: 2px;
+    }
+    .field input, .field select {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: rgba(232,76,107,0.5);
+      box-shadow: 0 0 0 3px rgba(232,76,107,0.08);
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    /* ── Submit ── */
+    .submit-row {
+      margin-top: 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .btn-predict {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px 36px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 20px rgba(232,76,107,0.3);
+      letter-spacing: 0.02em;
+    }
+    .btn-predict:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-predict:active { transform: translateY(0); }
+    .btn-predict:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-reset {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-reset:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Result panel ── */
+    #result-panel {
+      margin-top: 28px;
+      border-radius: 14px;
+      padding: 28px 32px;
+      display: none;
+      animation: fadeUp 0.4s ease both;
+      border: 1px solid transparent;
+    }
+    #result-panel.positive {
+      background: rgba(232,76,107,0.07);
+      border-color: rgba(232,76,107,0.2);
+    }
+    #result-panel.negative {
+      background: rgba(16,185,129,0.06);
+      border-color: rgba(16,185,129,0.2);
+    }
+    #result-panel.error-state {
+      background: rgba(249,115,22,0.07);
+      border-color: rgba(249,115,22,0.2);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .result-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .positive .result-dot { background: var(--accent); box-shadow: 0 0 10px rgba(232,76,107,0.6); }
+    .negative .result-dot { background: var(--green);  box-shadow: 0 0 10px rgba(16,185,129,0.6); }
+    .error-state .result-dot { background: var(--accent2); }
+
+    .result-label {
+      font-family: var(--font-disp);
+      font-size: 1.4rem;
+    }
+    .positive .result-label { color: var(--accent); }
+    .negative .result-label { color: var(--green); }
+    .error-state .result-label { color: var(--accent2); }
+
+    .result-sub { font-size: 0.83rem; color: var(--muted); }
+
+    .confidence-bar {
+      margin-top: 18px;
+    }
+    .confidence-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .confidence-bar-track {
+      height: 5px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .confidence-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .positive .confidence-bar-fill  { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .negative .confidence-bar-fill  { background: linear-gradient(90deg, #059669, var(--green)); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    /* ── Disclaimer ── */
+    .disclaimer {
+      margin-top: 20px;
+      font-size: 0.74rem;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .disclaimer strong { color: #475569; }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .card { padding: 24px 20px; }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .logo-text h1 { font-size: 1.4rem; }
+      .badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-left"></div>
+  <div class="glow-right"></div>
+
+  <div class="wrapper">
+    <header>
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
+                   2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+                   C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5
+                   c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>CardioScan</h1>
+        <span>Heart Disease Risk Predictor</span>
+      </div>
+      <div class="badge" id="api-badge">● Connecting…</div>
+    </header>
+
+    <div class="card">
+      <p class="card-title">Patient Clinical Assessment</p>
+      <p class="card-sub">Enter the patient's clinical measurements below to assess heart disease risk.</p>
+
+      <div class="form-grid">
+        <!-- age -->
+        <div class="field">
+          <label>Age (1 – 120 years)</label>
+          <p class="field-helper">Allowed range: 1–120.</p>
+          <input type="number" id="age" placeholder="e.g. 63" min="1" max="120" step="1" />
+        </div>
+        <!-- sex -->
+        <div class="field">
+          <label>Gender</label>
+          <select id="sex">
+            <option value="">Select…</option>
+            <option value="1">Male</option>
+            <option value="0">Female</option>
+          </select>
+        </div>
+        <!-- cp -->
+        <div class="field">
+          <label>Chest Pain Type</label>
+          <p class="field-helper">Type of chest pain experienced.</p>
+          <select id="cp">
+            <option value="">Select…</option>
+            <option value="0">Typical Angina</option>
+            <option value="1">Atypical Angina</option>
+            <option value="2">Non-Anginal Pain</option>
+            <option value="3">Asymptomatic</option>
+          </select>
+        </div>
+        <!-- trestbps -->
+        <div class="field">
+          <label>Blood Pressure (80 – 200 mm Hg)</label>
+          <p class="field-helper">Your resting blood pressure measurement. Allowed range: 80–200.</p>
+          <input type="number" id="trestbps" placeholder="e.g. 145" min="80" max="200" step="1" />
+        </div>
+        <!-- chol -->
+        <div class="field">
+          <label>Cholesterol Level (100 – 600 mg/dl)</label>
+          <p class="field-helper">Serum cholesterol from a blood test. Allowed range: 100–600.</p>
+          <input type="number" id="chol" placeholder="e.g. 233" min="100" max="600" step="1" />
+        </div>
+        <!-- fbs -->
+        <div class="field">
+          <label>High Fasting Blood Sugar</label>
+          <select id="fbs">
+            <option value="">Select…</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <!-- restecg -->
+        <div class="field">
+          <label>ECG Test Result</label>
+          <p class="field-helper">Result of resting electrocardiogram.</p>
+          <select id="restecg">
+            <option value="">Select…</option>
+            <option value="0">Normal</option>
+            <option value="1">ST-T Wave Abnormality</option>
+            <option value="2">Left Ventricular Hypertrophy</option>
+          </select>
+        </div>
+        <!-- thalach -->
+        <div class="field">
+          <label>Maximum Heart Rate (60 – 220 bpm)</label>
+          <p class="field-helper">Highest heart rate achieved during exercise. Allowed range: 60–220.</p>
+          <input type="number" id="thalach" placeholder="e.g. 150" min="60" max="220" step="1" />
+        </div>
+        <!-- exang -->
+        <div class="field">
+          <label>Chest Pain During Exercise</label>
+          <select id="exang">
+            <option value="">Select…</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <!-- oldpeak -->
+        <div class="field">
+          <label>Stress Test Result (0 – 6)</label>
+          <p class="field-helper">Typical range during exercise ECG testing. Allowed range: 0–6.</p>
+          <input type="number" id="oldpeak" placeholder="e.g. 2.3" step="0.1" min="0" max="6" />
+        </div>
+        <!-- slope -->
+        <div class="field">
+          <label>ECG Stress Pattern</label>
+          <p class="field-helper">Slope of peak exercise ST segment.</p>
+          <select id="slope">
+            <option value="">Select…</option>
+            <option value="0">Upsloping</option>
+            <option value="1">Flat</option>
+            <option value="2">Downsloping</option>
+          </select>
+        </div>
+        <!-- ca -->
+        <div class="field">
+          <label>Number of Blocked Arteries (0 – 4)</label>
+          <p class="field-helper">Major vessels colored by fluoroscopy. Allowed range: 0–4.</p>
+          <input type="number" id="ca" placeholder="e.g. 0" min="0" max="4" step="1" />
+        </div>
+        <!-- thal -->
+        <div class="field">
+          <label>Blood Disorder Result</label>
+          <p class="field-helper">Thalassemia or similar blood flow result.</p>
+          <select id="thal">
+            <option value="">Select…</option>
+            <option value="1">Normal</option>
+            <option value="2">Fixed Defect</option>
+            <option value="3">Reversible Defect</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="submit-row">
+        <button class="btn-predict" id="btn-predict" onclick="runPrediction()">
+          Analyse Risk
+        </button>
+        <button class="btn-reset" onclick="resetForm()">Clear Form</button>
+      </div>
+
+      <!-- Result -->
+      <div id="result-panel">
+        <div class="result-header">
+          <div class="result-dot"></div>
+          <div class="result-label" id="result-label">—</div>
+        </div>
+        <div class="result-sub" id="result-sub"></div>
+        <div class="confidence-bar" id="confidence-bar" style="display:none">
+          <div class="confidence-bar-label">
+            <span>Model Confidence</span>
+            <span id="confidence-pct">—</span>
+          </div>
+          <div class="confidence-bar-track">
+            <div class="confidence-bar-fill" id="confidence-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        <strong>Medical Disclaimer:</strong> This tool is for educational and
+        research purposes only. It is not a substitute for professional medical
+        advice, diagnosis, or treatment. Always consult a qualified healthcare
+        provider.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Use same origin when served from API (e.g. http://127.0.0.1:8000/); use full URL when opening file locally
+    const API_BASE = (typeof window !== "undefined" && window.location.protocol === "file:") ? "http://127.0.0.1:8000" : "";
+
+    const FIELDS = [
+      "age","sex","cp","trestbps","chol","fbs",
+      "restecg","thalach","exang","oldpeak","slope","ca","thal"
+    ];
+
+    // Dataset ranges for numeric fields (used for validation and messages)
+    const NUMERIC_RANGES = {
+      age:      { min: 1,   max: 120,  label: "Age" },
+      trestbps: { min: 80,  max: 200,  label: "Blood Pressure" },
+      chol:     { min: 100, max: 600,  label: "Cholesterol Level" },
+      thalach:  { min: 60,  max: 220,  label: "Maximum Heart Rate" },
+      oldpeak:  { min: 0,   max: 6,    label: "Stress Test Result" },
+      ca:       { min: 0,   max: 4,    label: "Number of Blocked Arteries" }
+    };
+
+    // ── API health check on load ──────────────────────────────────────────
+    async function checkApiHealth() {
+      const badge = document.getElementById("api-badge");
+      try {
+        const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          badge.textContent = "● API Connected";
+          badge.style.background = "rgba(16,185,129,0.1)";
+          badge.style.color = "#10b981";
+          badge.style.borderColor = "rgba(16,185,129,0.25)";
+        } else {
+          throw new Error("non-200");
+        }
+      } catch {
+        badge.textContent = "● API Offline";
+        badge.style.background = "rgba(249,115,22,0.1)";
+        badge.style.color = "#f97316";
+        badge.style.borderColor = "rgba(249,115,22,0.25)";
+      }
+    }
+    checkApiHealth();
+
+    // ── Normalize FastAPI error detail to a string ─────────────────────────
+    function getErrorMessage(detail) {
+      if (detail == null) return "";
+      if (typeof detail === "string") return detail;
+      if (Array.isArray(detail) && detail.length > 0) {
+        const first = detail[0];
+        return (first.msg ?? first.message ?? JSON.stringify(first));
+      }
+      if (typeof detail === "object") return detail.message ?? detail.msg ?? JSON.stringify(detail);
+      return String(detail);
+    }
+
+    // ── Validate numeric ranges; returns { valid: true } or { valid: false, message } ──
+    function validateFormRanges() {
+      for (const field of Object.keys(NUMERIC_RANGES)) {
+        const el = document.getElementById(field);
+        const val = el.value.trim();
+        if (val === "") continue;
+        const num = parseFloat(val);
+        if (Number.isNaN(num)) {
+          const r = NUMERIC_RANGES[field];
+          return { valid: false, message: `Please enter a valid number for ${r.label} (${r.min} – ${r.max}).` };
+        }
+        const r = NUMERIC_RANGES[field];
+        if (num < r.min || num > r.max) {
+          return { valid: false, message: `Please enter a value between ${r.min} and ${r.max} for ${r.label}.` };
+        }
+      }
+      return { valid: true };
+    }
+
+    // ── Get form values ───────────────────────────────────────────────────
+    function getFormData() {
+      const data = {};
+      for (const field of FIELDS) {
+        const el = document.getElementById(field);
+        const val = el.value.trim();
+        if (val === "") return null;
+        data[field] = parseFloat(val);
+      }
+      return data;
+    }
+
+    // ── Run prediction ────────────────────────────────────────────────────
+    async function runPrediction() {
+      const panel  = document.getElementById("result-panel");
+      const label  = document.getElementById("result-label");
+      const sub    = document.getElementById("result-sub");
+      const btn    = document.getElementById("btn-predict");
+      const confBar= document.getElementById("confidence-bar");
+
+      panel.style.display = "none";
+      panel.className = "";
+
+      const payload = getFormData();
+      if (!payload) {
+        showError("Please fill in all fields before predicting.");
+        return;
+      }
+
+      const rangeCheck = validateFormRanges();
+      if (!rangeCheck.valid) {
+        showError(rangeCheck.message);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Analysing…';
+
+      try {
+        const res = await fetch(`${API_BASE}/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          const msg = getErrorMessage(data?.detail) || `Server error (${res.status})`;
+          throw new Error(msg);
+        }
+
+        const prediction = data != null && typeof data.prediction !== "undefined"
+          ? Number(data.prediction)
+          : null;
+        if (prediction !== 0 && prediction !== 1) {
+          throw new Error("Invalid prediction response from server.");
+        }
+        displayResult({ prediction, confidence: data?.confidence });
+      } catch (e) {
+        const msg = (e && typeof e.message === "string") ? e.message : "Could not reach the API. Is the server running?";
+        showError(msg);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "Analyse Risk";
+      }
+    }
+
+    // ── Display result ────────────────────────────────────────────────────
+    function displayResult({ prediction, confidence }) {
+      const panel = document.getElementById("result-panel");
+      const label = document.getElementById("result-label");
+      const sub   = document.getElementById("result-sub");
+      const confBar = document.getElementById("confidence-bar");
+      const confPct = document.getElementById("confidence-pct");
+      const confFill= document.getElementById("confidence-fill");
+
+      if (prediction === 1) {
+        panel.className = "positive";
+        label.textContent = "High Heart Disease Risk";
+        sub.textContent = "The model predicts a high likelihood of heart disease. Please consult a cardiologist.";
+      } else {
+        panel.className = "negative";
+        label.textContent = "Low Heart Disease Risk";
+        sub.textContent = "The model predicts a low likelihood of heart disease. Continue regular monitoring.";
+      }
+
+      if (confidence !== null && confidence !== undefined) {
+        const pct = Math.round(confidence * 100);
+        confPct.textContent = `${pct}%`;
+        confBar.style.display = "block";
+        setTimeout(() => { confFill.style.width = `${pct}%`; }, 50);
+      } else {
+        confBar.style.display = "none";
+      }
+
+      panel.style.display = "block";
+    }
+
+    // ── Show error ────────────────────────────────────────────────────────
+    function showError(msg) {
+      const panel = document.getElementById("result-panel");
+      const label = document.getElementById("result-label");
+      const sub   = document.getElementById("result-sub");
+      panel.className = "error-state";
+      label.textContent = "Prediction Failed";
+      sub.textContent = msg;
+      document.getElementById("confidence-bar").style.display = "none";
+      panel.style.display = "block";
+    }
+
+    // ── Reset ─────────────────────────────────────────────────────────────
+    function resetForm() {
+      FIELDS.forEach(f => { document.getElementById(f).value = ""; });
+      const panel = document.getElementById("result-panel");
+      panel.style.display = "none";
+      panel.className = "";
+    }
+
+    // ── Allow Enter key ───────────────────────────────────────────────────
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") runPrediction();
+    });
+  </script>
+</body>
+</html>
