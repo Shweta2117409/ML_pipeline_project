@@ -189,3 +189,17 @@ Returns model status.
 | ca | Number of major vessels coloured by fluoroscopy (0–4) |
 | thal | Thalassemia type (0–3) |
 | target | Heart disease present (1) or absent (0) |
+
+## Week-to-concept mapping
+
+Week 1 → Python scripting & modular code structure (train.py, project folders)
+
+Week 2 → Data loading and EDA (load_data(), missing value analysis in preprocessor.py)
+
+Week 3 → Understanding ML learning process (preparing clean data before training)
+
+Week 4 → Model thinking & evaluation concepts (dataset preparation for experiments)
+
+Week 5 → Feature engineering & preprocessing pipeline (feature_engineer.py, outlier.py, data cleaning)
+
+Week 6 → Advanced AI concepts awareness (understanding broader ML/AI systems)
